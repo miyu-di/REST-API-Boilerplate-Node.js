@@ -1,0 +1,94 @@
+### 1. GET /announcements (Без параметрів — за замовчуванням сторінка 1, сортування newest)
+GET http://localhost:3000/announcements
+Accept: application/json
+
+###
+
+### 2. GET /announcements (З параметром пошуку search)
+GET http://localhost:3000/announcements?search=ноутбук
+Accept: application/json
+
+###
+
+### 3. GET /announcements (З параметрами sort та page)
+GET http://localhost:3000/announcements?sort=oldest&page=2
+Accept: application/json
+
+###
+
+### 4. GET /announcements/:id (Існуючий ID — спочатку створи запис і встав сюди актуальний ID)
+GET http://localhost:3000/announcements/1
+Accept: application/json
+
+###
+
+### 5. GET /announcements/:id (Неіснуючий ID — має повернути 404)
+GET http://localhost:3000/announcements/99999
+Accept: application/json
+
+###
+
+### 6. POST /announcements (Валідні дані — створення нового оголошення)
+POST http://localhost:3000/announcements
+Content-Type: application/json
+
+{
+  "title": "Продам ноутбук ASUS VIVOBOOK",
+  "description": "Чудовий стан, 16 ГБ оперативної пам'яті, SSD на 512 ГБ.",
+  "price": 18500,
+  "category": "sale",
+  "contactInfo": "0991234567"
+}
+
+###
+
+### 7. POST /announcements (Невалідні дані — має повернути 400 помилку валідації)
+POST http://localhost:3000/announcements
+Content-Type: application/json
+
+{
+  "title": "Мал",
+  "description": "Коротка",
+  "price": -100,
+  "category": "not-exists-category",
+  "contactInfo": "1"
+}
+
+###
+
+### 8. PATCH /announcements/:id (Часткове оновлення існуючого оголошення)
+PATCH http://localhost:3000/announcements/1
+Content-Type: application/json
+
+{
+  "price": 17000,
+  "title": "Продам ноутбук ASUS (Терміново)"
+}
+
+###
+
+### 9. PATCH /announcements/:id (Неіснуючий ID при оновленні — має повернути 404)
+PATCH http://localhost:3000/announcements/99999
+Content-Type: application/json
+
+{
+  "price": 12000
+}
+
+###
+
+### 10. PATCH /announcements/:id (Невалідний запит — порожнє тіло запиту, має повернути 400)
+PATCH http://localhost:3000/announcements/1
+Content-Type: application/json
+
+{}
+
+###
+
+### 11. DELETE /announcements/:id (Видалення існуючого оголошення — статус 204 без тіла)
+DELETE http://localhost:3000/announcements/1
+
+###
+
+### 12. DELETE /announcements/:id (Неіснуючий ID при видаленні — має повернути 404)
+DELETE http://localhost:3000/announcements/99999
