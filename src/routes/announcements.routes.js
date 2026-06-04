@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as controllers from "../controllers/announcements.controllers.js";
-import * as validators from "../validators/announcements.validators.js";
+import * as validators from "../validators/announcements.validator.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -14,13 +15,15 @@ const router = Router();
  *         name: search
  *         schema:
  *           type: string
- *         description: Пошук за підрядком у назві (title)
+ *         description: Пошук за підрядком у назві
  *       - in: query
  *         name: sort
  *         schema:
  *           type: string
- *           enum: [newest, oldest]
- *         description: Порядок сортування за датою створення
+ *           enum:
+ *             - newest
+ *             - oldest
+ *         description: Порядок сортування
  *       - in: query
  *         name: page
  *         schema:
@@ -29,7 +32,7 @@ const router = Router();
  *         description: Номер сторінки
  *     responses:
  *       200:
- *         description: Успішна відповідь зі списком оголошень та метаданими пагінації
+ *         description: Успішна відповідь зі списком оголошень
  */
 router.get("/", validators.getAllValidator, controllers.getAllAnnouncements);
 
@@ -62,13 +65,20 @@ router.get(
  * /announcements:
  *   post:
  *     summary: Створити нове оголошення
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [title, description, price, category, contactInfo]
+ *             required:
+ *               - title
+ *               - description
+ *               - price
+ *               - category
+ *               - contactInfo
  *             properties:
  *               title:
  *                 type: string
@@ -82,7 +92,11 @@ router.get(
  *                 minimum: 0.01
  *               category:
  *                 type: string
- *                 enum: [sale, service, job, other]
+ *                 enum:
+ *                   - sale
+ *                   - service
+ *                   - job
+ *                   - other
  *               contactInfo:
  *                 type: string
  *                 minLength: 5
@@ -90,10 +104,13 @@ router.get(
  *       201:
  *         description: Оголошення успішно створено
  *       400:
- *         description: Помилка валідації вхідних даних
+ *         description: Помилка валідації
+ *       401:
+ *         description: Неавторизований користувач
  */
 router.post(
   "/",
+  authenticate,
   validators.createAnnouncementValidator,
   controllers.createAnnouncement,
 );
@@ -103,6 +120,8 @@ router.post(
  * /announcements/{id}:
  *   patch:
  *     summary: Частково оновити існуюче оголошення
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -129,7 +148,11 @@ router.post(
  *                 minimum: 0.01
  *               category:
  *                 type: string
- *                 enum: [sale, service, job, other]
+ *                 enum:
+ *                   - sale
+ *                   - service
+ *                   - job
+ *                   - other
  *               contactInfo:
  *                 type: string
  *                 minLength: 5
@@ -137,12 +160,17 @@ router.post(
  *       200:
  *         description: Оголошення успішно оновлено
  *       400:
- *         description: Помилка валідації або порожнє тіло запиту
+ *         description: Помилка валідації
+ *       401:
+ *         description: Неавторизований користувач
+ *       403:
+ *         description: Доступ заборонено
  *       404:
  *         description: Оголошення не знайдено
  */
 router.patch(
   "/:id",
+  authenticate,
   validators.updateAnnouncementValidator,
   controllers.updateAnnouncement,
 );
@@ -152,6 +180,8 @@ router.patch(
  * /announcements/{id}:
  *   delete:
  *     summary: Видалити оголошення за ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -161,12 +191,17 @@ router.patch(
  *         description: ID оголошення
  *     responses:
  *       204:
- *         description: Оголошення успішно видалено (без тіла відповіді)
+ *         description: Оголошення успішно видалено
+ *       401:
+ *         description: Неавторизований користувач
+ *       403:
+ *         description: Доступ заборонено
  *       404:
  *         description: Оголошення не знайдено
  */
 router.delete(
   "/:id",
+  authenticate,
   validators.idParamValidator,
   controllers.deleteAnnouncement,
 );

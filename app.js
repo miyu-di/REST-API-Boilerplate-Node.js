@@ -3,6 +3,8 @@ import swaggerUi from 'swagger-ui-express'
 import swaggerJsdoc from 'swagger-jsdoc'
 import { errors as celebrateErrors } from 'celebrate'
 import announcementsRouter from "./src/routes/announcements.routes.js";
+import authRoutes from "./src/routes/auth.routes.js";
+import cookieParser from "cookie-parser";
 
 const app = express()
 
@@ -19,6 +21,16 @@ const swaggerOptions = {
         url: "http://localhost:3000",
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Введіть ваш access токен у форматі: Bearer <token>",
+        },
+      },
+    },
   },
   apis: ["./src/routes/*.js"],
 };
@@ -27,9 +39,13 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions)
 
 app.use(express.json())
 
+app.use(cookieParser());
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 app.use("/announcements", announcementsRouter);
+
+app.use("/auth", authRoutes);
 
 app.use(celebrateErrors())
 
@@ -67,7 +83,7 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: 'Foreign key constraint failed' })
   }
 
-  res.status(500).json({ error: 'Internal server error' })
+  res.status(500).json({ error: "Internal server error" });
 })
 
 const PORT = process.env.PORT || 3000

@@ -1,94 +1,129 @@
-### 1. GET /announcements (Без параметрів — за замовчуванням сторінка 1, сортування newest)
-GET http://localhost:3000/announcements
-Accept: application/json
+@baseUrl = http://localhost:3000
+@accessToken = СЮДИ_ВСТАВИШ_ACCESS_TOKEN_ПІСЛЯ_ЛОГІНУ
+@refreshToken = СЮДИ_ВСТАВИШ_REFRESH_TOKEN_ПІСЛЯ_ЛОГІНУ
 
-###
+### ==========================================
+### AUTH МАРШРУТИ
+### ==========================================
 
-### 2. GET /announcements (З параметром пошуку search)
-GET http://localhost:3000/announcements?search=ноутбук
-Accept: application/json
-
-###
-
-### 3. GET /announcements (З параметрами sort та page)
-GET http://localhost:3000/announcements?sort=oldest&page=2
-Accept: application/json
-
-###
-
-### 4. GET /announcements/:id (Існуючий ID — спочатку створи запис і встав сюди актуальний ID)
-GET http://localhost:3000/announcements/1
-Accept: application/json
-
-###
-
-### 5. GET /announcements/:id (Неіснуючий ID — має повернути 404)
-GET http://localhost:3000/announcements/99999
-Accept: application/json
-
-###
-
-### 6. POST /announcements (Валідні дані — створення нового оголошення)
-POST http://localhost:3000/announcements
+# 1. Реєстрація нового користувача (Успіх)
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "title": "Продам ноутбук ASUS VIVOBOOK",
-  "description": "Чудовий стан, 16 ГБ оперативної пам'яті, SSD на 512 ГБ.",
-  "price": 18500,
+  "username": "diana_it",
+  "password": "securepassword123",
+  "name": "Діана"
+}
+
+###
+
+# 2. Повторна реєстрація того самого юзера (Має повернути 409)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "diana_it",
+  "password": "securepassword123",
+  "name": "Діана"
+}
+
+###
+
+# 3. Вхід користувача (Успіх - повертає токени та куку)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "diana_it",
+  "password": "securepassword123"
+}
+
+###
+
+# 4. Вхід з невірними даними (Має повернути 401 Invalid credentials)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "diana_it",
+  "password": "wrongpassword"
+}
+
+###
+
+# 5. Оновлення токена (Token Rotation)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+
+# 6. Отримання профілю (Потребує токена)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+
+### ==========================================
+### ПЕРЕВІРКА ЗАХИСТУ ТА OWNERSHIP (ОГОЛОШЕННЯ)
+### ==========================================
+
+# 7. Створення оголошення БЕЗ токена (Має повернути 401)
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Новий крутий велосипед",
+  "description": "Продам велосипед у відмінному стані, майже новий.",
+  "price": 4500,
   "category": "sale",
-  "contactInfo": "0991234567"
+  "contactInfo": "+380990000000"
 }
 
 ###
 
-### 7. POST /announcements (Невалідні дані — має повернути 400 помилку валідації)
-POST http://localhost:3000/announcements
+# 8. Створення оголошення З токеном (Успіх, статус 201)
+# Переконайся, що в змінній @accessToken вгорі вставлено актуальний токен!
+POST {{baseUrl}}/announcements
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "title": "Мал",
-  "description": "Коротка",
-  "price": -100,
-  "category": "not-exists-category",
-  "contactInfo": "1"
+  "title": "Крутий гірський велосипед",
+  "description": "Продам велосипед у відмінному стані, 21 швидкість.",
+  "price": 5500,
+  "category": "sale",
+  "contactInfo": "+380990000000"
 }
 
 ###
 
-### 8. PATCH /announcements/:id (Часткове оновлення існуючого оголошення)
-PATCH http://localhost:3000/announcements/1
+# 9. Редагування власного оголошення (Успіх, міняємо ціну)
+# Заміни ID у лінку на той ID, який повернувся в запиті №8 (наприклад, /1)
+PATCH {{baseUrl}}/announcements/1
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "price": 17000,
-  "title": "Продам ноутбук ASUS (Терміново)"
+  "price": 5000
 }
 
 ###
 
-### 9. PATCH /announcements/:id (Неіснуючий ID при оновленні — має повернути 404)
-PATCH http://localhost:3000/announcements/99999
+# 10. Спроба видалити або змінити чуже оголошення (Має повернути 403)
+# (Для тесту потрібно створити оголошення від імені іншого юзера, або підставити ID, що не належить diana_it)
+DELETE {{baseUrl}}/announcements/999
+Authorization: Bearer {{accessToken}}
+
+###
+
+# 11. Вихід із системи (Логаут)
+POST {{baseUrl}}/auth/logout
 Content-Type: application/json
 
 {
-  "price": 12000
+  "refreshToken": "{{refreshToken}}"
 }
-
-###
-
-### 10. PATCH /announcements/:id (Невалідний запит — порожнє тіло запиту, має повернути 400)
-PATCH http://localhost:3000/announcements/1
-Content-Type: application/json
-
-{}
-
-###
-
-### 11. DELETE /announcements/:id (Видалення існуючого оголошення — статус 204 без тіла)
-DELETE http://localhost:3000/announcements/1
-
-###
-
-### 12. DELETE /announcements/:id (Неіснуючий ID при видаленні — має повернути 404)
-DELETE http://localhost:3000/announcements/99999
