@@ -127,3 +127,44 @@ Content-Type: application/json
 {
   "refreshToken": "{{refreshToken}}"
 }
+
+### Перевірка Rate Limiting (надішли цей запит більше 10 разів підряд)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "wrong_user",
+  "password": "wrong_password"
+}
+
+### Створення оголошення з фотографією
+POST {{baseUrl}}/announcements
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="title"
+
+Продам велосипед
+--WebAppBoundary
+Content-Disposition: form-data; name="description"
+
+Супер велік у відмінному стані
+--WebAppBoundary
+Content-Disposition: form-data; name="price"
+
+8500
+--WebAppBoundary
+Content-Disposition: form-data; name="category"
+
+sale
+--WebAppBoundary
+Content-Disposition: form-data; name="contactInfo"
+
+veloman@gmail.com
+--WebAppBoundary
+Content-Disposition: form-data; name="photo"; filename="test.png"
+Content-Type: image/png
+
+< ./test.png
+--WebAppBoundary--

@@ -21,6 +21,8 @@ export const createAnnouncementValidator = celebrate({
     price: Joi.number().positive().required(),
     category: Joi.string().valid("sale", "service", "job", "other").required(),
     contactInfo: Joi.string().min(5).required(),
+    photo: Joi.any().optional(),
+    imageUrl: Joi.string().optional(),
   }),
 });
 

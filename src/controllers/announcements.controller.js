@@ -1,7 +1,8 @@
 import prisma from "../../prisma/client.js";
 import createHttpError from "http-errors";
+import { uploadToCloudinary } from "../middleware/upload.middleware.js";
+import logger from "../logger.js";
 
-// GET /announcements (Публічний)
 export const getAllAnnouncements = async (req, res, next) => {
   try {
     const { search, sort, page } = req.query;
@@ -30,106 +31,120 @@ export const getAllAnnouncements = async (req, res, next) => {
 
     return res.json({
       data,
-      pagination: {
-        total,
-        page: currentPage,
-        totalPages,
-        perPage,
-      },
+      pagination: { total, page: currentPage, totalPages, perPage },
     });
   } catch (error) {
     next(error);
   }
 };
 
-// GET /announcements/:id (Публічний)
 export const getAnnouncementById = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-
     const announcement = await prisma.announcement.findUniqueOrThrow({
       where: { id },
     });
-
     return res.json(announcement);
   } catch (error) {
     next(error);
   }
 };
 
-// POST /announcements (Захищений)
 export const createAnnouncement = async (req, res, next) => {
   try {
-    // Беремо дані з тіла запиту + userId з розшифрованого токена (req.user)
+    const { title, description, price, category, contactInfo } = req.body;
+    let imageUrl = null;
+
+    if (req.file) {
+      logger.info(
+        "Початок завантаження фото для нового оголошення на Cloudinary...",
+      );
+      imageUrl = await uploadToCloudinary(req.file.path);
+      logger.info(`Фото успішно завантажено. URL: ${imageUrl}`);
+    }
+
     const newAnnouncement = await prisma.announcement.create({
       data: {
-        ...req.body,
+        title,
+        description,
+        price: price ? parseFloat(price) : 0, 
+        category,
+        contactInfo,
+        imageUrl, 
         userId: req.user.id,
       },
     });
 
+    logger.info(
+      `Користувач ID ${req.user.id} успішно створив оголошення з ID ${newAnnouncement.id}`,
+    );
     return res.status(201).json(newAnnouncement);
   } catch (error) {
     next(error);
   }
 };
 
-// PATCH /announcements/:id (Захищений + Перевірка власності)
 export const updateAnnouncement = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
-    // 1. Спочатку шукаємо оголошення в базі
     const announcement = await prisma.announcement.findUnique({
       where: { id },
     });
-
-    // Якщо не знайшли — віддаємо 404 через http-errors
     if (!announcement) {
       return next(createHttpError(404, "Announcement not found"));
     }
 
-    // 2. Перевіряємо Ownership: чи збігається автор із поточним юзером
     if (announcement.userId !== req.user.id) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // 3. Якщо все ок — оновлюємо дані
+    const updateData = { ...req.body };
+
+    if (updateData.price) {
+      updateData.price = parseFloat(updateData.price);
+    }
+
+    if (req.file) {
+      logger.info(
+        `Початок завантаження нового фото для оголошення ID ${id}...`,
+      );
+      updateData.imageUrl = await uploadToCloudinary(req.file.path);
+      logger.info(`Нове фото завантажено. URL: ${updateData.imageUrl}`);
+    }
+
     const updatedAnnouncement = await prisma.announcement.update({
       where: { id },
-      data: req.body,
+      data: updateData,
     });
 
+    logger.info(
+      `Оголошення ID ${id} успішно оновлено користувачем ID ${req.user.id}`,
+    );
     return res.json(updatedAnnouncement);
   } catch (error) {
     next(error);
   }
 };
 
-// DELETE /announcements/:id (Захищений + Перевірка власності)
 export const deleteAnnouncement = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
-    // 1. Спочатку шукаємо оголошення
     const announcement = await prisma.announcement.findUnique({
       where: { id },
     });
-
     if (!announcement) {
       return next(createHttpError(404, "Announcement not found"));
     }
 
-    // 2. Перевіряємо Ownership
     if (announcement.userId !== req.user.id) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // 3. Якщо все ок — видаляємо
-    await prisma.announcement.delete({
-      where: { id },
-    });
+    await prisma.announcement.delete({ where: { id } });
 
+    logger.info(`Оголошення ID ${id} видалено користувачем ID ${req.user.id}`);
     return res.status(204).end();
   } catch (error) {
     next(error);

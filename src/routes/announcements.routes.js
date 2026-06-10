@@ -1,7 +1,8 @@
 import { Router } from "express";
-import * as controllers from "../controllers/announcements.controllers.js";
+import * as controllers from "../controllers/announcements.controller.js";
 import * as validators from "../validators/announcements.validator.js";
 import { authenticate } from "../middleware/auth.middleware.js";
+import { uploadMiddleware } from "../middleware/upload.middleware.js";
 
 const router = Router();
 
@@ -62,15 +63,15 @@ router.get(
 
 /**
  * @swagger
- * /announcements:
+  * /announcements:
  *   post:
- *     summary: Створити нове оголошення
+ *     summary: Створити нове оголошення (multipart/form-data)
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -100,6 +101,10 @@ router.get(
  *               contactInfo:
  *                 type: string
  *                 minLength: 5
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Файл зображення оголошення (опціонально)
  *     responses:
  *       201:
  *         description: Оголошення успішно створено
@@ -111,6 +116,7 @@ router.get(
 router.post(
   "/",
   authenticate,
+  uploadMiddleware.single("photo"),
   validators.createAnnouncementValidator,
   controllers.createAnnouncement,
 );
@@ -119,7 +125,7 @@ router.post(
  * @swagger
  * /announcements/{id}:
  *   patch:
- *     summary: Частково оновити існуюче оголошення
+ *     summary: Частково оновити існуюче оголошення (multipart/form-data)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -132,7 +138,7 @@ router.post(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -156,6 +162,10 @@ router.post(
  *               contactInfo:
  *                 type: string
  *                 minLength: 5
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Нове фото для заміни (опціонально)
  *     responses:
  *       200:
  *         description: Оголошення успішно оновлено
@@ -171,6 +181,7 @@ router.post(
 router.patch(
   "/:id",
   authenticate,
+  uploadMiddleware.single("photo"),
   validators.updateAnnouncementValidator,
   controllers.updateAnnouncement,
 );
